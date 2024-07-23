@@ -85,7 +85,8 @@ RUN sed -i 's/Listen 80/Listen 8080/' /etc/apache2/ports.conf
 # Fix the .htaccess file handling
 RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
 
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# Install Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 # Set entrypoint
 ENTRYPOINT ["docker-php-entrypoint"]
