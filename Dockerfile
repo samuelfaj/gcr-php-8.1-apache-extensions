@@ -4,30 +4,30 @@ FROM --platform=linux/amd64 php:8.1-apache
 # Set working directory
 WORKDIR /var/www/html
 
+RUN apt-get update
 RUN echo "deb http://packages.dotdeb.org jessie all" >> /etc/apt/sources.list
 RUN echo "deb-src http://packages.dotdeb.org jessie all" >> /etc/apt/sources.list
-RUN curl -sS --insecure https://www.dotdeb.org/dotdeb.gpg | apt-key add -
+# RUN curl -sS --insecure https://www.dotdeb.org/dotdeb.gpg | apt-key add -
 
 # Add the GPG keys and update the repository
-RUN apt-get update && apt-get install -y --fix-missing --no-install-recommends \
-    apt-utils \
-    gnupg \ 
-    libfreetype6-dev \
-    libjpeg-dev \
-    libpng-dev \
-    libxpm-dev \
-    libvpx-dev \
-    libzip-dev \
-    libicu-dev \
-    libxml2-dev \
-    libssl-dev \
-    libxslt1-dev \
-    libonig-dev \
-    zlib1g-dev \
-    libcurl4-openssl-dev \
-    pkg-config \
-    libmagickwand-dev \
-    git
+RUN apt-get install -y apt-utils
+RUN apt-get install -y gnupg 
+RUN apt-get install -y libfreetype6-dev 
+RUN apt-get install -y libjpeg-dev 
+RUN apt-get install -y libpng-dev 
+RUN apt-get install -y libxpm-dev 
+RUN apt-get install -y libvpx-dev 
+RUN apt-get install -y libzip-dev 
+RUN apt-get install -y libicu-dev 
+RUN apt-get install -y libxml2-dev 
+RUN apt-get install -y libssl-dev 
+RUN apt-get install -y libxslt1-dev 
+RUN apt-get install -y libonig-dev 
+RUN apt-get install -y zlib1g-dev 
+RUN apt-get install -y libcurl4-openssl-dev 
+RUN apt-get install -y pkg-config 
+RUN apt-get install -y libmagickwand-dev 
+RUN apt-get install -y git
 
 RUN rm -r /var/lib/apt/lists/*
 
@@ -35,13 +35,14 @@ RUN rm -r /var/lib/apt/lists/*
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-xpm
 RUN docker-php-ext-configure zip
 RUN docker-php-ext-configure pdo
+RUN docker-php-ext-configure mbstring
 
 # Install PHP extensions
-RUN docker-php-ext-install gd
+# RUN docker-php-ext-install gd
 RUN docker-php-ext-install zip
 RUN docker-php-ext-install pdo
-RUN docker-php-ext-install mbstring
-RUN docker-php-ext-install intl 
+#RUN docker-php-ext-install mbstring
+# RUN docker-php-ext-install intl 
 RUN docker-php-ext-install pdo_mysql 
 RUN docker-php-ext-install mysqli 
 RUN docker-php-ext-install soap 
