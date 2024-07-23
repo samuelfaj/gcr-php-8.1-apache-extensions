@@ -4,8 +4,14 @@ FROM --platform=linux/amd64 php:8.1-apache
 # Set working directory
 WORKDIR /var/www/html
 
+RUN echo "deb http://packages.dotdeb.org jessie all" >> /etc/apt/sources.list
+RUN echo "deb-src http://packages.dotdeb.org jessie all" >> /etc/apt/sources.list
+RUN curl -sS --insecure https://www.dotdeb.org/dotdeb.gpg | apt-key add -
+
 # Add the GPG keys and update the repository
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --fix-missing --no-install-recommends \
+    apt-utils \
+    gnupg \ 
     libfreetype6-dev \
     libjpeg-dev \
     libpng-dev \
@@ -21,33 +27,38 @@ RUN apt-get update && apt-get install -y \
     libcurl4-openssl-dev \
     pkg-config \
     libmagickwand-dev \
-    --no-install-recommends && rm -r /var/lib/apt/lists/*
+    git
+
+RUN rm -r /var/lib/apt/lists/*
+
+# Configure PHP extensions
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-xpm
+RUN docker-php-ext-configure zip
+RUN docker-php-ext-configure pdo
 
 # Install PHP extensions
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-xpm
-RUN docker-php-ext-configure zip 
-# RUN docker-php-ext-install -j$(nproc) gd
-RUN docker-php-ext-install -j$(nproc) intl 
-# RUN docker-php-ext-install -j$(nproc) pdo 
-RUN docker-php-ext-install -j$(nproc) pdo_mysql 
-RUN docker-php-ext-install -j$(nproc) mysqli 
-#RUN docker-php-ext-install -j$(nproc) zip 
-RUN docker-php-ext-install -j$(nproc) soap 
-RUN docker-php-ext-install -j$(nproc) bcmath 
-RUN docker-php-ext-install -j$(nproc) opcache 
-# RUN docker-php-ext-install -j$(nproc) mbstring 
-RUN docker-php-ext-install -j$(nproc) exif 
-RUN docker-php-ext-install -j$(nproc) pcntl 
-RUN docker-php-ext-install -j$(nproc) xsl 
-RUN docker-php-ext-install -j$(nproc) curl 
-RUN docker-php-ext-install -j$(nproc) gettext 
-RUN docker-php-ext-install -j$(nproc) xml 
-RUN docker-php-ext-install -j$(nproc) sockets 
-RUN docker-php-ext-install -j$(nproc) ftp
+RUN docker-php-ext-install gd
+RUN docker-php-ext-install zip
+RUN docker-php-ext-install pdo
+RUN docker-php-ext-install mbstring
+RUN docker-php-ext-install intl 
+RUN docker-php-ext-install pdo_mysql 
+RUN docker-php-ext-install mysqli 
+RUN docker-php-ext-install soap 
+RUN docker-php-ext-install bcmath 
+RUN docker-php-ext-install opcache 
+RUN docker-php-ext-install exif 
+RUN docker-php-ext-install pcntl 
+RUN docker-php-ext-install xsl 
+RUN docker-php-ext-install curl 
+RUN docker-php-ext-install gettext 
+RUN docker-php-ext-install xml 
+RUN docker-php-ext-install sockets 
+RUN docker-php-ext-install ftp
 
 # Install and enable PECL extensions
-RUN pecl install redis imagick \
-    && docker-php-ext-enable redis imagick
+RUN pecl install redis imagick 
+RUN docker-php-ext-enable redis imagick
 
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
