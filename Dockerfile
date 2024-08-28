@@ -5,11 +5,9 @@ FROM --platform=linux/amd64 php:8.1-apache
 WORKDIR /var/www/html
 
 RUN apt-get update
-RUN echo "deb http://packages.dotdeb.org jessie all" >> /etc/apt/sources.list
-RUN echo "deb-src http://packages.dotdeb.org jessie all" >> /etc/apt/sources.list
-# RUN curl -sS --insecure https://www.dotdeb.org/dotdeb.gpg | apt-key add -
 
 # Add the GPG keys and update the repository
+RUN apt-get install --reinstall gcc
 RUN apt-get install -y apt-utils
 RUN apt-get install -y gnupg 
 RUN apt-get install -y libfreetype6-dev 
@@ -36,13 +34,14 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-xpm
 RUN docker-php-ext-configure zip
 RUN docker-php-ext-configure pdo
 RUN docker-php-ext-configure mbstring
+RUN docker-php-ext-configure intl
 
 # Install PHP extensions
-# RUN docker-php-ext-install gd
+RUN docker-php-ext-install gd
 RUN docker-php-ext-install zip
 RUN docker-php-ext-install pdo
-#RUN docker-php-ext-install mbstring
-# RUN docker-php-ext-install intl 
+RUN docker-php-ext-install mbstring
+RUN docker-php-ext-install intl 
 RUN docker-php-ext-install pdo_mysql 
 RUN docker-php-ext-install mysqli 
 RUN docker-php-ext-install soap 
@@ -56,6 +55,7 @@ RUN docker-php-ext-install gettext
 RUN docker-php-ext-install xml 
 RUN docker-php-ext-install sockets 
 RUN docker-php-ext-install ftp
+RUN docker-php-ext-install calendar
 
 # Install and enable PECL extensions
 RUN pecl install redis imagick 
