@@ -71,11 +71,6 @@ RUN chown -R www-data:www-data /var/www/html \
 
 # Expose port 8080 (Cloud Run expects the service to listen on this port)
 EXPOSE 8080
-
-# Update PHP Timezone
-RUN cp /usr/local/etc/php/php.ini-development /usr/local/etc/php/php.ini && \
-    sed -i '/^date.timezone=/d' /usr/local/etc/php/php.ini && \
-    echo "date.timezone=US/Pacific" >> /usr/local/etc/php/php.ini
     
 # Set the Apache environment variable for the document root
 ENV APACHE_DOCUMENT_ROOT /var/www/html
