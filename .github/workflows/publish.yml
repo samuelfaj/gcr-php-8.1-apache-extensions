@@ -1,0 +1,48 @@
+name: Build and publish
+
+on:
+  push:
+    branches: [main, 'security/**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/samuelfaj/gcr-php-8.1-apache-extensions
+  TAG: 8.1.34-cve-2026-109618
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: docker build --platform linux/amd64 --label "org.opencontainers.image.source=https://github.com/${{ github.repository }}" -t "$IMAGE:$TAG" .
+
+      - name: Smoke test
+        run: |
+          set -eux
+          docker run --rm "$IMAGE:$TAG" php -r 'exit(PHP_VERSION === "8.1.34" ? 0 : 1);'
+          docker run --rm "$IMAGE:$TAG" php -r 'exit(ini_get("session.upload_progress.enabled") ? 1 : 0);'
+          mods="$(docker run --rm "$IMAGE:$TAG" php -m)"
+          for m in bcmath calendar curl exif ftp gd gettext imagick intl mbstring mysqli pcntl pdo_mysql redis soap sockets xsl zip "Zend OPcache"; do
+            echo "$mods" | grep -qx "$m"
+          done
+          mkdir -p smoke
+          printf '%s' '<?php header("Content-Type: application/json"); echo json_encode(["php" => PHP_VERSION, "post" => $_POST, "files" => count($_FILES)]);' > smoke/index.php
+          docker run -d --name smoke -p 8080:8080 -v "$PWD/smoke:/var/www/html:ro" "$IMAGE:$TAG"
+          for i in $(seq 1 30); do curl -fs http://127.0.0.1:8080/ && break; sleep 1; done
+          curl -fs -F a=1 -F f=@Dockerfile http://127.0.0.1:8080/ | grep -q '"php":"8.1.34","post":{"a":"1"},"files":1'
+          ! docker logs smoke 2>&1 | grep -qi segfault
+          docker rm -f smoke
+
+      - name: Push
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker push "$IMAGE:$TAG"
+          docker inspect --format '{{index .RepoDigests 0}}' "$IMAGE:$TAG" | tee digest.txt
