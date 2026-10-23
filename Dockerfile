@@ -1,5 +1,31 @@
-# Use the official PHP image with Apache
-FROM --platform=linux/amd64 php:8.1-apache
+# Use the official PHP image with Apache.
+# PHP 8.1 is EOL, so 8.1.34 is pinned by digest and rebuilt below with the
+# php-src security backport for CVE-2026-109618 / CVE-2026-109619.
+FROM --platform=linux/amd64 php:8.1.34-apache-bookworm@sha256:a935f4a5717427519337269d5d1c89968cc27ab84d1c8d5d7b5363672d800cd5
+
+# Upstream backport: https://github.com/php/php-src/commit/1d7dec178a094e6e75b229ce22754045f8c6070a
+COPY patches/php-8.1-CVE-2026-109618-109619.patch /usr/src/
+RUN set -eux; \
+    echo "c85ad0fddcbff7f2318617eeaa54d271135463b5bf70a01228447e3ed78de96e  /usr/src/php-8.1-CVE-2026-109618-109619.patch" | sha256sum -c -; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends patch apache2-dev libargon2-dev libcurl4-openssl-dev libonig-dev \
+      libreadline-dev libsodium-dev libsqlite3-dev libssl-dev libxml2-dev zlib1g-dev; \
+    export CFLAGS="$PHP_CFLAGS" CPPFLAGS="$PHP_CPPFLAGS" LDFLAGS="$PHP_LDFLAGS"; \
+    docker-php-source extract; \
+    cd /usr/src/php; \
+    patch -p1 < /usr/src/php-8.1-CVE-2026-109618-109619.patch; \
+    eval "./configure $(php-config --configure-options)"; \
+    make -j "$(nproc)"; \
+    make install; \
+    cd /; \
+    docker-php-source delete; \
+    rm -rf /var/lib/apt/lists/* /usr/src/php-8.1-CVE-2026-109618-109619.patch; \
+    php -r 'exit(PHP_VERSION === "8.1.34" ? 0 : 1);'; \
+    grep -q zend_mm_safe_error_ex "$(php-config --include-dir)/Zend/zend_alloc.h"; \
+    grep -q zend_mm_safe_error_ex /usr/lib/apache2/modules/libphp.so
+
+# Mitigation from the PHP security team for CVE-2026-109619 / CVE-2026-115560.
+RUN echo "session.upload_progress.enabled = 0" > "$PHP_INI_DIR/conf.d/zz-security.ini"
 
 # Set working directory
 WORKDIR /var/www/html
